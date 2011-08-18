@@ -148,12 +148,82 @@ output_source (Basename, Messages, Enums, Options) ->
     error_logger:info_msg("Writing src file to ~p~n",[SrcFile]),
     file:write_file(SrcFile, erl_prettypr:format(erl_syntax:form_list (Forms1))).
 
+%% Find package names, and prepend them to all message and enum identifiers.
+%% @hidden
+parse_package(Structure) -> find_package_name(Structure, []).
+
+%% @hidden
+find_package_name([{package, PackageName} | Tail], Acc) ->
+    package_munge(Acc ++ Tail, [], PackageName);
+
+find_package_name([Head | Tail], Acc) ->
+    find_package_name(Tail, Acc ++ [Head]);
+
+% If we hit this pattern, no package name was specified in this proto; pass
+% it on unmolested.
+find_package_name([], Acc) ->
+    {ok, Acc}.
+
+%% @hidden
+package_munge([{package, ConflictingPackageName} | Tail], Acc, PackageName) ->
+    {error, "Multiple package names defined!", {PackageName, ConflictingPackageName}, Acc, Tail};
+
+package_munge([{message, MessageName, Fields} | Tail], Acc, PackageName) ->
+    NewMessageName = "." ++ PackageName ++ "." ++ MessageName,
+    {ok, MungedFields} = package_munge_fields(Fields, [], PackageName),
+    package_munge(Tail, Acc ++ [{message, NewMessageName, MungedFields}], PackageName);
+
+package_munge([{enum, EnumName, Values} | Tail], Acc, PackageName) ->
+    NewEnumName = "." ++ PackageName ++ "." ++ EnumName,
+    package_munge(Tail, Acc ++ [{enum, NewEnumName, Values}], PackageName);
+
+package_munge([Head | Tail], Acc, PackageName) ->
+    package_munge(Tail, Acc ++ [Head], PackageName);
+
+% Done munging message, type, and enum names.
+package_munge([], Acc, _PackageName) ->
+    {ok, Acc}.
+
+%% @hidden
+package_munge_fields([{package, ConflictingPackageName} | Tail], Acc, PackageName) ->
+    {error, "Multiple package names defined!", {PackageName, ConflictingPackageName}, Acc, Tail};
+
+package_munge_fields([{message, MessageName, Fields} | Tail], Acc, PackageName) ->
+    NewMessageName = "." ++ PackageName ++ "." ++ MessageName,
+    {ok, MungedFields} = package_munge_fields(Fields, [], PackageName),
+    package_munge_fields(Tail, Acc ++ [{message, NewMessageName, MungedFields}], PackageName);
+
+package_munge_fields([{enum, EnumName, Values} | Tail], Acc, PackageName) ->
+    NewEnumName = "." ++ PackageName ++ "." ++ EnumName,
+    package_munge_fields(Tail, Acc ++ [{enum, NewEnumName, Values}], PackageName);
+
+package_munge_fields([{FieldID, Rule, Type, Name, Default} | Tail], Acc, PackageName) ->
+    case is_scalar_type(Type) of
+            true ->
+                package_munge_fields(Tail, Acc ++ [{FieldID, Rule, Type, Name, Default}], PackageName);
+            false ->
+                case string:substr(Type, 1, 1) of
+                    "." ->
+                        package_munge_fields(Tail, Acc ++ [{FieldID, Rule, Type, Name, Default}], PackageName);
+                    _ ->
+                        NewType = "." ++ PackageName ++ "." ++ Type,
+                        package_munge_fields(Tail, Acc ++ [{FieldID, Rule, NewType, Name, Default}], PackageName)
+                end
+    end;
+
+package_munge_fields([Head | Tail], Acc, PackageName) ->
+    package_munge_fields(Tail, Acc ++ [Head], PackageName);
+
+package_munge_fields([], Acc, _PackageName) ->
+    {ok, Acc}.
+
 %% @hidden
 parse(FileName) ->
     {ok, InFile} = file:open(FileName, [read]),
     Acc = loop(InFile,[]),
     file:close(InFile),
-    protobuffs_parser:parse(Acc).
+    {ok, Structure} = protobuffs_parser:parse(Acc),
+    parse_package(Structure).
 
 %% @hidden
 loop(InFile,Acc) ->
