@@ -124,6 +124,7 @@ all() ->
      parse_packed_repeated_test_case,
      parse_special_words_test_case,
      parse_import_test_case,
+     parse_advanced_import_test_case,
      parse_single_test_case,
      parse_extend_test_case].
 
@@ -167,6 +168,8 @@ parse_packed_repeated_test_case() ->
 parse_special_words_test_case() ->
     [].
 parse_import_test_case() ->
+	[].
+parse_advanced_import_test_case() ->
 	[].
 parse_single_test_case() ->
     [].
@@ -310,6 +313,13 @@ parse_import_test_case(Config) ->
     Path = filename:absname(filename:join([DataDir, "import.proto"])),
     protobuffs_compile:scan_file(Path, [{imports_dir, [DataDir]}]),
     true = eqc:quickcheck(eqc:numtests(NumTests,protobuffs_eqc:prop_protobuffs_import())).
+
+parse_advanced_import_test_case(Config) ->
+    DataDir = ?config(data_dir, Config),
+    NumTests = ?config(num_tests, Config),
+    Path = filename:absname(filename:join([DataDir, "advanced_import.proto"])),
+    protobuffs_compile:scan_file(Path, [{imports_dir, [DataDir]}]),
+    true = eqc:quickcheck(eqc:numtests(NumTests,protobuffs_eqc:prop_protobuffs_advanced_import())).
 
 parse_single_test_case(Config) ->
     DataDir = ?config(data_dir, Config),

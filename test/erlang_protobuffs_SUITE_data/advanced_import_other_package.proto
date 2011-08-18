@@ -1,0 +1,5 @@
+package advanced_import_other_package;
+
+message Imported {
+	optional string name = 1;
+}

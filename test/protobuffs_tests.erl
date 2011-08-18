@@ -242,6 +242,14 @@ parse_imported_test_() ->
     [?_assertEqual(false, lists:keyfind("Imported", 2, Parsed)),
      ?_assertMatch({message, "Foo", _Foo}, lists:keyfind("Foo", 2, Parsed))].
 
+parse_advanced_import_test_() ->
+    Path = filename:absname("../test/erlang_protobuffs_SUITE_data/advanced_import.proto"),
+    Parsed = parse(Path),
+    [?_assertEqual(false, lists:keyfind("Imported", 2, Parsed)),
+     ?_assertEqual(false, lists:keyfind(".advanced_import_other_package.Imported", 2, Parsed)),
+     ?_assertEqual(false, lists:keyfind("subpackage.Imported", 2, Parsed)),
+     ?_assertMatch({message, "Foo", _Foo}, lists:keyfind("Foo", 2, Parsed))].
+
 parse_extend_out_of_range_test_() ->
     DataDir = "../test/erlang_protobuffs_SUITE_data",
     Path = filename:absname(filename:join([DataDir,"extend_out_of_range.proto"])),

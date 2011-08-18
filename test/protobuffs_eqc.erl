@@ -360,6 +360,20 @@ prop_protobuffs_import() ->
 		compare_messages(Imported, Decoded)
 	    end).
 
+other_package_imported() ->
+	{advanced_import_other_package_imported, default(undefined, string())}.
+
+subpackage_imported() ->
+	{subpackage_imported, default(undefined, string())}.
+
+prop_protobuffs_advanced_import() ->
+    ?FORALL({Imported},
+		{{foo, default(undefined, other_package_imported()), default(undefined, subpackage_imported())}},
+	    begin
+		Decoded = advanced_import_pb:decode_foo(advanced_import_pb:encode(Imported)),
+		compare_messages(Imported, Decoded)
+	    end).
+
 single() ->
     {message, uint32()}.
 

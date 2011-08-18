@@ -1,0 +1,9 @@
+package advanced_import;
+
+import "advanced_import_other_package.proto";
+import "advanced_import_subpackage.proto";
+
+message Foo {
+	optional .advanced_import_other_package.Imported bar = 1;
+	optional subpackage.Imported baz = 2;
+}
