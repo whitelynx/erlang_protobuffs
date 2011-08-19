@@ -176,54 +176,32 @@ package_munge([{package, OtherPackageName} | _Tail], _Acc, PackageName) ->
 
 package_munge([{message, MessageName, Fields} | Tail], Acc, PackageName) ->
     NewMessageName = "." ++ PackageName ++ "." ++ MessageName,
-    {ok, MungedFields} = package_munge_fields(Fields, [], PackageName),
+    {ok, MungedFields} = package_munge(Fields, PackageName),
     package_munge(Tail, Acc ++ [{message, NewMessageName, MungedFields}], PackageName);
 
 package_munge([{enum, EnumName, Values} | Tail], Acc, PackageName) ->
     NewEnumName = "." ++ PackageName ++ "." ++ EnumName,
     package_munge(Tail, Acc ++ [{enum, NewEnumName, Values}], PackageName);
 
+package_munge([{FieldID, Rule, Type, Name, Default} | Tail], Acc, PackageName) ->
+    case is_scalar_type(Type) of
+            true ->
+                package_munge(Tail, Acc ++ [{FieldID, Rule, Type, Name, Default}], PackageName);
+            false ->
+                case string:substr(Type, 1, 1) of
+                    "." ->
+                        package_munge(Tail, Acc ++ [{FieldID, Rule, Type, Name, Default}], PackageName);
+                    _ ->
+                        NewType = "." ++ PackageName ++ "." ++ Type,
+                        package_munge(Tail, Acc ++ [{FieldID, Rule, NewType, Name, Default}], PackageName)
+                end
+    end;
+
 package_munge([Head | Tail], Acc, PackageName) ->
     package_munge(Tail, Acc ++ [Head], PackageName);
 
 % Done munging message, type, and enum names.
 package_munge([], Acc, _PackageName) ->
-    {ok, Acc}.
-
-%% @hidden
-package_munge_fields([{package, PackageName} | _Tail], _Acc, PackageName) ->
-	error_logger:warning_report({package_name_repeated, "Package name '" ++ PackageName ++ "' specified twice in the same file!"});
-
-package_munge_fields([{package, OtherPackageName} | _Tail], _Acc, PackageName) ->
-	throw({error, "Multiple package names specified in the same file!", PackageName, OtherPackageName});
-
-package_munge_fields([{message, MessageName, Fields} | Tail], Acc, PackageName) ->
-    NewMessageName = "." ++ PackageName ++ "." ++ MessageName,
-    {ok, MungedFields} = package_munge_fields(Fields, [], PackageName),
-    package_munge_fields(Tail, Acc ++ [{message, NewMessageName, MungedFields}], PackageName);
-
-package_munge_fields([{enum, EnumName, Values} | Tail], Acc, PackageName) ->
-    NewEnumName = "." ++ PackageName ++ "." ++ EnumName,
-    package_munge_fields(Tail, Acc ++ [{enum, NewEnumName, Values}], PackageName);
-
-package_munge_fields([{FieldID, Rule, Type, Name, Default} | Tail], Acc, PackageName) ->
-    case is_scalar_type(Type) of
-            true ->
-                package_munge_fields(Tail, Acc ++ [{FieldID, Rule, Type, Name, Default}], PackageName);
-            false ->
-                case string:substr(Type, 1, 1) of
-                    "." ->
-                        package_munge_fields(Tail, Acc ++ [{FieldID, Rule, Type, Name, Default}], PackageName);
-                    _ ->
-                        NewType = "." ++ PackageName ++ "." ++ Type,
-                        package_munge_fields(Tail, Acc ++ [{FieldID, Rule, NewType, Name, Default}], PackageName)
-                end
-    end;
-
-package_munge_fields([Head | Tail], Acc, PackageName) ->
-    package_munge_fields(Tail, Acc ++ [Head], PackageName);
-
-package_munge_fields([], Acc, _PackageName) ->
     {ok, Acc}.
 
 %% @hidden
