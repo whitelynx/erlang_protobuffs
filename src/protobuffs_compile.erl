@@ -154,7 +154,7 @@ parse_package(Structure) -> find_package_name(Structure, []).
 
 %% @hidden
 find_package_name([{package, PackageName} | Tail], Acc) ->
-    package_munge(Acc ++ Tail, [], PackageName);
+    package_munge(Acc, PackageName) ++ [{package, PackageName} | package_munge(Tail, PackageName)];
 
 find_package_name([Head | Tail], Acc) ->
     find_package_name(Tail, Acc ++ [Head]);
@@ -165,8 +165,14 @@ find_package_name([], Acc) ->
     {ok, Acc}.
 
 %% @hidden
-package_munge([{package, ConflictingPackageName} | Tail], Acc, PackageName) ->
-    {error, "Multiple package names defined!", {PackageName, ConflictingPackageName}, Acc, Tail};
+package_munge(Acc, PackageName) ->
+	package_munge(Acc, [], PackageName).
+
+package_munge([{package, OtherPackageName} | _Tail], _Acc, PackageName) when OtherPackageName =/= PackageName ->
+	throw({error, "Multiple package names specified in the same file!", PackageName, OtherPackageName});
+
+package_munge([{package, PackageName} | _Tail], _Acc, PackageName) ->
+	error_logger:warning_report({package_name_repeated, "Package name '" ++ PackageName ++ "' specified twice in the same file!"});
 
 package_munge([{message, MessageName, Fields} | Tail], Acc, PackageName) ->
     NewMessageName = "." ++ PackageName ++ "." ++ MessageName,
@@ -185,8 +191,11 @@ package_munge([], Acc, _PackageName) ->
     {ok, Acc}.
 
 %% @hidden
-package_munge_fields([{package, ConflictingPackageName} | Tail], Acc, PackageName) ->
-    {error, "Multiple package names defined!", {PackageName, ConflictingPackageName}, Acc, Tail};
+package_munge_fields([{package, OtherPackageName} | _Tail], _Acc, PackageName) when OtherPackageName =/= PackageName ->
+	throw({error, "Multiple package names specified in the same file!", PackageName, OtherPackageName});
+
+package_munge_fields([{package, PackageName} | _Tail], _Acc, PackageName) ->
+	error_logger:warning_report({package_name_repeated, "Package name '" ++ PackageName ++ "' specified twice in the same file!"});
 
 package_munge_fields([{message, MessageName, Fields} | Tail], Acc, PackageName) ->
     NewMessageName = "." ++ PackageName ++ "." ++ MessageName,
