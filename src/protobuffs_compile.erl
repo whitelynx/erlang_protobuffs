@@ -168,11 +168,11 @@ find_package_name([], Acc) ->
 package_munge(Acc, PackageName) ->
 	package_munge(Acc, [], PackageName).
 
-package_munge([{package, OtherPackageName} | _Tail], _Acc, PackageName) when OtherPackageName =/= PackageName ->
-	throw({error, "Multiple package names specified in the same file!", PackageName, OtherPackageName});
-
 package_munge([{package, PackageName} | _Tail], _Acc, PackageName) ->
 	error_logger:warning_report({package_name_repeated, "Package name '" ++ PackageName ++ "' specified twice in the same file!"});
+
+package_munge([{package, OtherPackageName} | _Tail], _Acc, PackageName) ->
+	throw({error, "Multiple package names specified in the same file!", PackageName, OtherPackageName});
 
 package_munge([{message, MessageName, Fields} | Tail], Acc, PackageName) ->
     NewMessageName = "." ++ PackageName ++ "." ++ MessageName,
@@ -191,11 +191,11 @@ package_munge([], Acc, _PackageName) ->
     {ok, Acc}.
 
 %% @hidden
-package_munge_fields([{package, OtherPackageName} | _Tail], _Acc, PackageName) when OtherPackageName =/= PackageName ->
-	throw({error, "Multiple package names specified in the same file!", PackageName, OtherPackageName});
-
 package_munge_fields([{package, PackageName} | _Tail], _Acc, PackageName) ->
 	error_logger:warning_report({package_name_repeated, "Package name '" ++ PackageName ++ "' specified twice in the same file!"});
+
+package_munge_fields([{package, OtherPackageName} | _Tail], _Acc, PackageName) ->
+	throw({error, "Multiple package names specified in the same file!", PackageName, OtherPackageName});
 
 package_munge_fields([{message, MessageName, Fields} | Tail], Acc, PackageName) ->
     NewMessageName = "." ++ PackageName ++ "." ++ MessageName,
