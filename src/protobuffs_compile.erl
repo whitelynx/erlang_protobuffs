@@ -491,15 +491,15 @@ resolve_types ([{TypePath, Fields} | Tail], AllPaths, Enums, Acc) ->
 				  case is_scalar_type (Type) of
 				      true -> [Input | TmpAcc];
 				      false ->
+					  FullPath = lists:reverse (string:tokens (Type, ".")),
 					  PossiblePaths =
 					      case string:substr (Type, 1, 1) of
 						  "." ->
-						      % handle types of the form .package.Foo.Bar which are absolute,
-						      % so we just convert to a type path and check it.
-						      FullPath = string:tokens (Type, "."),
-						      all_possible_type_paths ([lists:reverse (FullPath)], TypePath);
+						      % Handle types of the form .package.Foo.Bar which are absolute,
+						      % so we just check the type path directly.
+						      [FullPath];
 						  _ ->
-						      all_possible_type_paths (Type, TypePath)
+						      all_possible_type_paths (FullPath, TypePath)
 					      end,
 					  RealPath =
 					      case find_type (PossiblePaths, AllPaths) of
@@ -617,7 +617,7 @@ sublists(List,Acc) ->
 %% @hidden
 all_possible_type_paths (Type, TypePath) ->
     lists:foldl (fun (TypeSuffix, AccIn) ->
-			 [[Type | TypeSuffix] | AccIn]
+			 [Type ++ TypeSuffix | AccIn]
 		 end,
 		 [],
 		 sublists (TypePath)).
