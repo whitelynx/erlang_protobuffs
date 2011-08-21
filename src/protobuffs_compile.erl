@@ -154,8 +154,8 @@ parse_package(Structure) -> find_and_apply_package_name(Structure, []).
 
 %% @hidden
 find_and_apply_package_name([{package, PackageName} | Tail], Acc) ->
-    {ok, TransformedHead} = apply_package_name(Acc, PackageName),
-    {ok, TransformedTail} = apply_package_name(Tail, PackageName),
+    {ok, TransformedHead} = apply_package_name(Acc, string:tokens(PackageName)),
+    {ok, TransformedTail} = apply_package_name(Tail, string:tokens(PackageName)),
     {ok, TransformedHead ++ [{package, PackageName} | TransformedTail]};
 
 find_and_apply_package_name([Head | Tail], Acc) ->
@@ -172,21 +172,23 @@ apply_package_name(Acc, PackageName) ->
     apply_package_name(Acc, [], PackageName).
 
 % Error conditions
-apply_package_name([{package, PackageName} | _Tail], _Acc, PackageName) ->
-    error_logger:warning_report({package_name_repeated, "Package name '" ++ PackageName ++ "' specified twice in the same file!"});
-
 apply_package_name([{package, OtherPackageName} | _Tail], _Acc, PackageName) ->
-    throw({error, "Multiple package names specified in the same file!", PackageName, OtherPackageName});
+    JoinedPackageName = string:join(PackageName, "."),
+    case OtherPackageName of
+	JoinedPackageName ->
+	    error_logger:warning_report({package_name_repeated, "Package name '" ++ JoinedPackageName ++ "' specified twice in the same file!"});
+	_ ->
+	    throw({error, "Multiple package names specified in the same file!", JoinedPackageName, OtherPackageName})
+    end;
 
 % Modify messages.
 apply_package_name([{message, MessageName, Fields} | Tail], Acc, PackageName) ->
-    NewMessageName = "." ++ PackageName ++ "." ++ MessageName,
-    {ok, TransformedFields} = apply_package_name(Fields, PackageName ++ "." ++ MessageName),
-    apply_package_name(Tail, Acc ++ [{message, NewMessageName, TransformedFields}], PackageName);
+    NewMessageName = [MessageName | PackageName],
+    apply_package_name(Tail, Acc ++ [{message, NewMessageName, Fields}], PackageName);
 
 % Modify enums.
 apply_package_name([{enum, EnumName, Values} | Tail], Acc, PackageName) ->
-    NewEnumName = "." ++ PackageName ++ "." ++ EnumName,
+    NewEnumName = [EnumName | PackageName],
     apply_package_name(Tail, Acc ++ [{enum, NewEnumName, Values}], PackageName);
 
 % Ignore fields and other such things.
