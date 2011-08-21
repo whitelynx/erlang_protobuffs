@@ -148,7 +148,7 @@ output_source (Basename, Messages, Enums, Options) ->
     error_logger:info_msg("Writing src file to ~p~n",[SrcFile]),
     file:write_file(SrcFile, erl_prettypr:format(erl_syntax:form_list (Forms1))).
 
-%% Find package names, and prepend them to all message and enum identifiers.
+%% Find package names, and prepend them to all message and enum definitions.
 %% @hidden
 parse_package(Structure) -> find_and_apply_package_name(Structure, []).
 
@@ -166,43 +166,34 @@ find_and_apply_package_name([Head | Tail], Acc) ->
 find_and_apply_package_name([], Acc) ->
     {ok, Acc}.
 
+%% Apply the given package name to all message and enum definitions.
 %% @hidden
 apply_package_name(Acc, PackageName) ->
     apply_package_name(Acc, [], PackageName).
 
+% Error conditions
 apply_package_name([{package, PackageName} | _Tail], _Acc, PackageName) ->
     error_logger:warning_report({package_name_repeated, "Package name '" ++ PackageName ++ "' specified twice in the same file!"});
 
 apply_package_name([{package, OtherPackageName} | _Tail], _Acc, PackageName) ->
     throw({error, "Multiple package names specified in the same file!", PackageName, OtherPackageName});
 
+% Modify messages.
 apply_package_name([{message, MessageName, Fields} | Tail], Acc, PackageName) ->
     NewMessageName = "." ++ PackageName ++ "." ++ MessageName,
-    {ok, TransformedFields} = apply_package_name(Fields, PackageName),
+    {ok, TransformedFields} = apply_package_name(Fields, PackageName ++ "." ++ MessageName),
     apply_package_name(Tail, Acc ++ [{message, NewMessageName, TransformedFields}], PackageName);
 
+% Modify enums.
 apply_package_name([{enum, EnumName, Values} | Tail], Acc, PackageName) ->
     NewEnumName = "." ++ PackageName ++ "." ++ EnumName,
     apply_package_name(Tail, Acc ++ [{enum, NewEnumName, Values}], PackageName);
 
-apply_package_name([{FieldID, Rule, Type, Name, Default} | Tail], Acc, PackageName) ->
-    case is_scalar_type(Type) of
-            true ->
-                apply_package_name(Tail, Acc ++ [{FieldID, Rule, Type, Name, Default}], PackageName);
-            false ->
-                case string:substr(Type, 1, 1) of
-                    "." ->
-                        apply_package_name(Tail, Acc ++ [{FieldID, Rule, Type, Name, Default}], PackageName);
-                    _ ->
-                        NewType = "." ++ PackageName ++ "." ++ Type,
-                        apply_package_name(Tail, Acc ++ [{FieldID, Rule, NewType, Name, Default}], PackageName)
-                end
-    end;
-
+% Ignore fields and other such things.
 apply_package_name([Head | Tail], Acc, PackageName) ->
     apply_package_name(Tail, Acc ++ [Head], PackageName);
 
-% Done munging message, type, and enum names.
+% Done applying the package name.
 apply_package_name([], Acc, _PackageName) ->
     {ok, Acc}.
 
