@@ -173,13 +173,13 @@ prop_protobuffs_has_default() ->
 
 location() ->
     Str = string(),
-    default(undefined,{location,Str,Str}).
+    default(undefined,{simple_location,Str,Str}).
 
 prop_protobuffs_simple() ->
     ?FORALL({Person},
-	    {{person,string(),string(),string(),sint32(),location()}},
+	    {{simple_person,string(),string(),string(),sint32(),location()}},
 	    begin
-		Decoded = simple_pb:decode_person(simple_pb:encode_person(Person)),
+		Decoded = simple_pb:decode_simple_person(simple_pb:encode_simple_person(Person)),
 		compare_messages(Person,Decoded)
 	    end).
 
