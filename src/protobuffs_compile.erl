@@ -156,7 +156,7 @@ parse_package(Structure) -> find_and_apply_package_name(Structure, []).
 find_and_apply_package_name([{package, PackageName} | Tail], Acc) ->
     {ok, TransformedHead} = apply_package_name(Acc, PackageName),
     {ok, TransformedTail} = apply_package_name(Tail, PackageName),
-    TransformedHead ++ [{package, PackageName} | TransformedTail];
+    {ok, TransformedHead ++ [{package, PackageName} | TransformedTail]};
 
 find_and_apply_package_name([Head | Tail], Acc) ->
     find_and_apply_package_name(Tail, Acc ++ [Head]);
