@@ -150,60 +150,60 @@ output_source (Basename, Messages, Enums, Options) ->
 
 %% Find package names, and prepend them to all message and enum identifiers.
 %% @hidden
-parse_package(Structure) -> find_package_name(Structure, []).
+parse_package(Structure) -> find_and_apply_package_name(Structure, []).
 
 %% @hidden
-find_package_name([{package, PackageName} | Tail], Acc) ->
-    {ok, MungedHead} = package_munge(Acc, PackageName),
-    {ok, MungedTail} = package_munge(Tail, PackageName),
-    MungedHead ++ [{package, PackageName} | MungedTail];
+find_and_apply_package_name([{package, PackageName} | Tail], Acc) ->
+    {ok, TransformedHead} = apply_package_name(Acc, PackageName),
+    {ok, TransformedTail} = apply_package_name(Tail, PackageName),
+    TransformedHead ++ [{package, PackageName} | TransformedTail];
 
-find_package_name([Head | Tail], Acc) ->
-    find_package_name(Tail, Acc ++ [Head]);
+find_and_apply_package_name([Head | Tail], Acc) ->
+    find_and_apply_package_name(Tail, Acc ++ [Head]);
 
 % If we hit this pattern, no package name was specified in this proto; pass
 % it on unmolested.
-find_package_name([], Acc) ->
+find_and_apply_package_name([], Acc) ->
     {ok, Acc}.
 
 %% @hidden
-package_munge(Acc, PackageName) ->
-    package_munge(Acc, [], PackageName).
+apply_package_name(Acc, PackageName) ->
+    apply_package_name(Acc, [], PackageName).
 
-package_munge([{package, PackageName} | _Tail], _Acc, PackageName) ->
+apply_package_name([{package, PackageName} | _Tail], _Acc, PackageName) ->
     error_logger:warning_report({package_name_repeated, "Package name '" ++ PackageName ++ "' specified twice in the same file!"});
 
-package_munge([{package, OtherPackageName} | _Tail], _Acc, PackageName) ->
+apply_package_name([{package, OtherPackageName} | _Tail], _Acc, PackageName) ->
     throw({error, "Multiple package names specified in the same file!", PackageName, OtherPackageName});
 
-package_munge([{message, MessageName, Fields} | Tail], Acc, PackageName) ->
+apply_package_name([{message, MessageName, Fields} | Tail], Acc, PackageName) ->
     NewMessageName = "." ++ PackageName ++ "." ++ MessageName,
-    {ok, MungedFields} = package_munge(Fields, PackageName),
-    package_munge(Tail, Acc ++ [{message, NewMessageName, MungedFields}], PackageName);
+    {ok, TransformedFields} = apply_package_name(Fields, PackageName),
+    apply_package_name(Tail, Acc ++ [{message, NewMessageName, TransformedFields}], PackageName);
 
-package_munge([{enum, EnumName, Values} | Tail], Acc, PackageName) ->
+apply_package_name([{enum, EnumName, Values} | Tail], Acc, PackageName) ->
     NewEnumName = "." ++ PackageName ++ "." ++ EnumName,
-    package_munge(Tail, Acc ++ [{enum, NewEnumName, Values}], PackageName);
+    apply_package_name(Tail, Acc ++ [{enum, NewEnumName, Values}], PackageName);
 
-package_munge([{FieldID, Rule, Type, Name, Default} | Tail], Acc, PackageName) ->
+apply_package_name([{FieldID, Rule, Type, Name, Default} | Tail], Acc, PackageName) ->
     case is_scalar_type(Type) of
             true ->
-                package_munge(Tail, Acc ++ [{FieldID, Rule, Type, Name, Default}], PackageName);
+                apply_package_name(Tail, Acc ++ [{FieldID, Rule, Type, Name, Default}], PackageName);
             false ->
                 case string:substr(Type, 1, 1) of
                     "." ->
-                        package_munge(Tail, Acc ++ [{FieldID, Rule, Type, Name, Default}], PackageName);
+                        apply_package_name(Tail, Acc ++ [{FieldID, Rule, Type, Name, Default}], PackageName);
                     _ ->
                         NewType = "." ++ PackageName ++ "." ++ Type,
-                        package_munge(Tail, Acc ++ [{FieldID, Rule, NewType, Name, Default}], PackageName)
+                        apply_package_name(Tail, Acc ++ [{FieldID, Rule, NewType, Name, Default}], PackageName)
                 end
     end;
 
-package_munge([Head | Tail], Acc, PackageName) ->
-    package_munge(Tail, Acc ++ [Head], PackageName);
+apply_package_name([Head | Tail], Acc, PackageName) ->
+    apply_package_name(Tail, Acc ++ [Head], PackageName);
 
 % Done munging message, type, and enum names.
-package_munge([], Acc, _PackageName) ->
+apply_package_name([], Acc, _PackageName) ->
     {ok, Acc}.
 
 %% @hidden
