@@ -154,8 +154,8 @@ parse_package(Structure) -> find_and_apply_package_name(Structure, []).
 
 %% @hidden
 find_and_apply_package_name([{package, PackageName} | Tail], Acc) ->
-    {ok, TransformedHead} = apply_package_name(Acc, string:tokens(PackageName)),
-    {ok, TransformedTail} = apply_package_name(Tail, string:tokens(PackageName)),
+    {ok, TransformedHead} = apply_package_name(Acc, string:tokens(PackageName, ".")),
+    {ok, TransformedTail} = apply_package_name(Tail, string:tokens(PackageName, ".")),
     {ok, TransformedHead ++ [{package, PackageName} | TransformedTail]};
 
 find_and_apply_package_name([Head | Tail], Acc) ->
@@ -492,13 +492,14 @@ resolve_types ([{TypePath, Fields} | Tail], AllPaths, Enums, Acc) ->
 				      true -> [Input | TmpAcc];
 				      false ->
 					  PossiblePaths =
-					      case string:tokens (Type,".") of
-						  [Type] ->
-						      all_possible_type_paths (Type, TypePath);
-						  FullPath ->
-						% handle types of the form Foo.Bar which are absolute,
-						% so we just convert to a type path and check it.
-						      [lists:reverse (FullPath)]
+					      case string:substr (Type, 1, 1) of
+						  "." ->
+						      % handle types of the form .package.Foo.Bar which are absolute,
+						      % so we just convert to a type path and check it.
+						      FullPath = string:tokens (Type, "."),
+						      all_possible_type_paths ([lists:reverse (FullPath)], TypePath);
+						  _ ->
+						      all_possible_type_paths (Type, TypePath)
 					      end,
 					  RealPath =
 					      case find_type (PossiblePaths, AllPaths) of

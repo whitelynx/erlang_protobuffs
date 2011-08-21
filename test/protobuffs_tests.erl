@@ -188,6 +188,22 @@ parse_nested5_test_() ->
      ?_assertMatch({1,optional,"bool","foo",none},lists:keyfind(1,1,Inner)),
      ?_assertMatch({1,required,"First.Inner","inner",none},lists:keyfind(1,1,Second))].
 
+parse_nested6_test_() ->
+    Path = filename:absname("../test/erlang_protobuffs_SUITE_data/nested6.proto"),
+    Parsed = parse(Path),
+    [{package,"nesting_test"}, {message, "Outer",Outer}] = Parsed,
+    {message, "MiddleAA", MiddleAA} = lists:keyfind("MiddleAA",2,Outer),
+    {message, "MiddleBB", MiddleBB} = lists:keyfind("MiddleBB",2,Outer),
+    {message, "Inner", Inner} = lists:keyfind("Inner",2,MiddleAA),
+    {message, "AnotherInner", AnotherInner} = lists:keyfind("AnotherInner",2,MiddleBB),
+    [?_assertMatch({1,optional,"MiddleBB.AnotherInner","anotherInner",none},lists:keyfind(1,1,Outer)),
+     ?_assertMatch({1,required,"int64","ival",none},lists:keyfind(1,1,Inner)),
+     ?_assertMatch({2,optional,"bool","booly",none},lists:keyfind(2,1,Inner)),
+     ?_assertMatch({2,required,"MiddleAA.Inner","inner2",none},lists:keyfind(2,1,AnotherInner)),
+     ?_assertMatch({3,required,"Outer.MiddleAA.Inner","inner3",none},lists:keyfind(3,1,AnotherInner)),
+     ?_assertMatch({4,required,"nesting_test.Outer.MiddleAA.Inner","inner4",none},lists:keyfind(4,1,AnotherInner)),
+     ?_assertMatch({5,required,".nesting_test.Outer.MiddleAA.Inner","inner5",none},lists:keyfind(5,1,AnotherInner))].
+
 parse_addressbook_test_() ->
     Path = filename:absname("../test/erlang_protobuffs_SUITE_data/addressbook.proto"),
     Parsed = parse(Path),

@@ -116,6 +116,7 @@ all() ->
      parse_nested3_test_case,
      parse_nested4_test_case,
      parse_nested5_test_case,
+     parse_nested6_test_case,
      parse_enum_test_case,
      parse_enum_outside_test_case,
      parse_extensions_test_case,
@@ -152,6 +153,8 @@ parse_nested3_test_case() ->
 parse_nested4_test_case() ->
     [].
 parse_nested5_test_case() ->
+    [].
+parse_nested6_test_case() ->
     [].
 parse_enum_test_case() ->
     [].
@@ -250,6 +253,13 @@ parse_nested5_test_case(Config) ->
     protobuffs_compile:scan_file(Path),
     true = eqc:quickcheck(eqc:numtests(NumTests,protobuffs_eqc:prop_protobuffs_nested5_1())),
     true = eqc:quickcheck(eqc:numtests(NumTests,protobuffs_eqc:prop_protobuffs_nested5_2())).
+
+parse_nested6_test_case(Config) ->
+    DataDir = ?config(data_dir, Config),
+    NumTests = ?config(num_tests, Config),
+    Path = filename:absname(filename:join([DataDir,"nested6.proto"])),
+    protobuffs_compile:scan_file(Path),
+    true = eqc:quickcheck(eqc:numtests(NumTests,protobuffs_eqc:prop_protobuffs_nested6())).
 
 parse_enum_test_case(Config) ->
     DataDir = ?config(data_dir, Config),

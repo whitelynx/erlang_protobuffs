@@ -268,6 +268,25 @@ prop_protobuffs_nested5_2() ->
 		compare_messages(Inner,Decoded)
 	    end).
 
+
+n6_innerAA() ->
+    {outer_middleaa_inner,sint64(),default(undefined,bool())}.
+
+n6_middleAA() ->
+    Inner = n6_innerAA(),
+    {outer_middleaa,default(undefined,Inner)}.
+
+n6_innerBB() ->
+    {outer_middlebb_anotherinner,default(undefined,n6_innerAA()),default(undefined,n6_innerAA()),default(undefined,n6_innerAA()),default(undefined,n6_innerAA())}.
+
+prop_protobuffs_nested6() ->
+    ?FORALL({Middle},
+	    {{outer,default(undefined,n6_innerBB())}},
+	    begin
+		Decoded = nested2_pb:decode_outer(nested2_pb:encode_outer(Middle)),
+		compare_messages(Middle,Decoded)
+	    end).
+
 enum_value() ->
     oneof([value1,value2]).
 

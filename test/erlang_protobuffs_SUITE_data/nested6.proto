@@ -1,0 +1,20 @@
+package nesting_test;
+
+message Outer {
+  message MiddleAA {
+    message Inner {
+      required int64 ival = 1;
+      optional bool  booly = 2;
+    }
+  }
+  message MiddleBB {
+    message AnotherInner {
+      //required Inner inner1 = 1; // Will not work.
+      required MiddleAA.Inner inner2 = 2; // Matches in the scope of Outer
+      required Outer.MiddleAA.Inner inner3 = 3; // Matches in the root scope of this package
+      required nesting_test.Outer.MiddleAA.Inner inner4 = 4; // Matches in the global root scope
+      required .nesting_test.Outer.MiddleAA.Inner inner5 = 5; // Absolute name of the Inner type
+    }
+  }
+  optional MiddleBB.AnotherInner anotherInner = 1;
+}
