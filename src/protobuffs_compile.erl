@@ -154,7 +154,9 @@ parse_package(Structure) -> find_package_name(Structure, []).
 
 %% @hidden
 find_package_name([{package, PackageName} | Tail], Acc) ->
-    package_munge(Acc, PackageName) ++ [{package, PackageName} | package_munge(Tail, PackageName)];
+    {ok, MungedHead} = package_munge(Acc, PackageName),
+    {ok, MungedTail} = package_munge(Tail, PackageName),
+    MungedHead ++ [{package, PackageName} | MungedTail];
 
 find_package_name([Head | Tail], Acc) ->
     find_package_name(Tail, Acc ++ [Head]);
@@ -166,13 +168,13 @@ find_package_name([], Acc) ->
 
 %% @hidden
 package_munge(Acc, PackageName) ->
-	package_munge(Acc, [], PackageName).
+    package_munge(Acc, [], PackageName).
 
 package_munge([{package, PackageName} | _Tail], _Acc, PackageName) ->
-	error_logger:warning_report({package_name_repeated, "Package name '" ++ PackageName ++ "' specified twice in the same file!"});
+    error_logger:warning_report({package_name_repeated, "Package name '" ++ PackageName ++ "' specified twice in the same file!"});
 
 package_munge([{package, OtherPackageName} | _Tail], _Acc, PackageName) ->
-	throw({error, "Multiple package names specified in the same file!", PackageName, OtherPackageName});
+    throw({error, "Multiple package names specified in the same file!", PackageName, OtherPackageName});
 
 package_munge([{message, MessageName, Fields} | Tail], Acc, PackageName) ->
     NewMessageName = "." ++ PackageName ++ "." ++ MessageName,
