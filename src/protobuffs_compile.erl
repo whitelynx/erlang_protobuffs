@@ -34,7 +34,7 @@
 -record(collected,{enum=[], msg=[], extensions=[]}).
 
 %%--------------------------------------------------------------------
-%% @doc Generats a built .beam file and header file .hrl
+%% @doc Generates a built .beam file and header file .hrl
 %%--------------------------------------------------------------------
 -spec scan_file(ProtoFile :: string()) ->
 		       ok | {error, _}.
@@ -47,8 +47,8 @@ scan_string(String,BaseName) ->
     scan_string(String,BaseName,[]).
 
 %%--------------------------------------------------------------------
-%% @doc Generats a built .beam file and header file .hrl
-%%      Considerd option properties: output_include_dir, 
+%% @doc Generates a built .beam file and header file .hrl
+%%      Considered option properties: output_include_dir, 
 %%                                   output_ebin_dir,
 %%                                   imports_dir
 %%--------------------------------------------------------------------
@@ -74,7 +74,7 @@ scan_string(String,Basename,Options) ->
     output(Basename, Messages, Collected#collected.enum, Options).
     
 %%--------------------------------------------------------------------
-%% @doc Generats a source .erl file and header file .hrl
+%% @doc Generates a source .erl file and header file .hrl
 %%--------------------------------------------------------------------
 -spec generate_source(ProtoFile :: string()) ->
 			     ok | {error, _}.
@@ -85,8 +85,8 @@ generate_source(ProtoFile) ->
     generate_source(Basename,[]).
 
 %%--------------------------------------------------------------------
-%% @doc Generats a source .erl file and header file .hrl
-%%      Consider option properties: output_include_dir, 
+%% @doc Generates a source .erl file and header file .hrl
+%%      Considered option properties: output_include_dir, 
 %%                                  output_src_dir,
 %%                                  imports_dir
 %%--------------------------------------------------------------------
