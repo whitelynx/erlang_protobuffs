@@ -104,30 +104,35 @@ generate_source(ProtoFile,Options) when is_list (ProtoFile) ->
 
 %% @hidden
 parse_imports(Parsed, Path) ->
-    parse_imports(Parsed, Path, []).
+	parse_imports(Parsed, Path, [], []).
 
 %% @hidden
-parse_imports([], _Path, Acc) ->
+parse_imports([], _Path, Acc, Included) ->
     lists:reverse(Acc);
-parse_imports([{import, File} = Head | Tail], Path, Acc) ->
-    case protobuffs_file:path_open(Path, File, [read]) of
-	{ok, F, Fullname} ->
-	    file:close(F),
-	    {ok,String} = parse_file(Fullname),
-	    {ok,FirstParsed} = parse_string(String),
-	    Parsed = lists:append(FirstParsed, Tail),
-	    parse_imports(Parsed, Path, [Head | Acc]);
-	{error, Error} ->
-	    error_logger:error_report([
-				       "Could not do import",
-				       {import, File},
-				       {error, Error},
-				       {path, Path}
-				      ]),
-	    parse_imports(Tail, Path, [Head | Acc])
+parse_imports([{import, File} = Head | Tail], Path, Acc, Included) ->
+	case lists:member({Path, File}, Included) of
+	false ->
+		case protobuffs_file:path_open(Path, File, [read]) of
+		{ok, F, Fullname} ->
+			file:close(F),
+			{ok, String} = parse_file(Fullname),
+			{ok, FirstParsed} = parse_string(String),
+			Parsed = lists:append(FirstParsed, Tail),
+			parse_imports(Parsed, Path, [Head | Acc], [{Path, File} | Included]);
+		{error, Error} ->
+			error_logger:error_report([
+						   "Could not do import",
+						   {import, File},
+						   {error, Error},
+						   {path, Path}
+						  ]),
+			parse_imports(Tail, Path, [Head | Acc], Included)
+		end;
+	true ->
+		parse_imports(Tail, Path, [Head | Acc], Included)
     end;
-parse_imports([Head | Tail], Path, Acc) ->
-    parse_imports(Tail, Path, [Head | Acc]).
+parse_imports([Head | Tail], Path, Acc, Included) ->
+    parse_imports(Tail, Path, [Head | Acc], Included).
 
 %% @hidden
 output(Basename, Messages, Enums, Options) ->
