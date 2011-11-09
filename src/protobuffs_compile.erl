@@ -107,32 +107,34 @@ parse_imports(Parsed, Path) ->
 	parse_imports(Parsed, Path, [], []).
 
 %% @hidden
-parse_imports([], _Path, Acc, Included) ->
-    lists:reverse(Acc);
-parse_imports([{import, File} = Head | Tail], Path, Acc, Included) ->
-	case lists:member({Path, File}, Included) of
-	false ->
-		case protobuffs_file:path_open(Path, File, [read]) of
-		{ok, F, Fullname} ->
-			file:close(F),
-			{ok, String} = parse_file(Fullname),
-			{ok, FirstParsed} = parse_string(String),
-			Parsed = lists:append(FirstParsed, Tail),
-			parse_imports(Parsed, Path, [Head | Acc], [{Path, File} | Included]);
-		{error, Error} ->
-			error_logger:error_report([
-						   "Could not do import",
-						   {import, File},
-						   {error, Error},
-						   {path, Path}
-						  ]),
-			parse_imports(Tail, Path, [Head | Acc], Included)
-		end;
-	true ->
-		parse_imports(Tail, Path, [Head | Acc], Included)
-    end;
-parse_imports([Head | Tail], Path, Acc, Included) ->
-    parse_imports(Tail, Path, [Head | Acc], Included).
+parse_imports([], _Path, Acc, ImportedFiles) ->
+	lists:reverse(Acc);
+
+parse_imports([{import, File} = Head | Tail], Path, Acc, ImportedFiles) ->
+	case lists:member({Path, File}, ImportedFiles) of
+		false ->
+			case protobuffs_file:path_open(Path, File, [read]) of
+				{ok, F, Fullname} ->
+					file:close(F),
+					{ok, String} = parse_file(Fullname),
+					{ok, FirstParsed} = parse_string(String),
+					Parsed = lists:append(FirstParsed, Tail),
+					parse_imports(Parsed, Path, [Head | Acc], [{Path, File} | ImportedFiles]);
+				{error, Error} ->
+					error_logger:error_report([
+						"Could not do import",
+						{import, File},
+						{error, Error},
+						{path, Path}
+						]),
+					parse_imports(Tail, Path, [Head | Acc], ImportedFiles)
+			end;
+		true ->
+			parse_imports(Tail, Path, [Head | Acc], ImportedFiles)
+	end;
+
+parse_imports([Head | Tail], Path, Acc, ImportedFiles) ->
+	parse_imports(Tail, Path, [Head | Acc], ImportedFiles).
 
 %% @hidden
 output(Basename, Messages, Enums, Options) ->
